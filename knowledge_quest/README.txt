@@ -1,4 +1,4 @@
-KNOWLEDGE QUEST — THREE WORLDS EDITION
+KNOWLEDGE QUEST — AUDIO EDITION 2
 
 CÁCH CHẠY
 1. Giải nén file ZIP.
@@ -41,12 +41,18 @@ CƠ CHẾ GAME
 - Mũi tên trái/phải hoặc A/D: di chuyển.
 - Space, mũi tên lên hoặc W: nhảy.
 - Nút Tạm dừng: dừng và tiếp tục màn chơi.
-- Nút Âm thanh: bật/tắt hiệu ứng âm thanh.
+- Nút Âm thanh: bật/tắt toàn bộ nhạc nền và hiệu ứng.
+- Thanh VOL: điều chỉnh âm lượng từ 0% đến 100%.
+- Các nút Bắt đầu, Vào Map, chọn màn, Tạm dừng, Tiếp tục, Quay lại, Thoát và các nút kết thúc đều có hiệu ứng bấm riêng.
+- Âm thanh được mở khóa ngay từ thao tác bấm đầu tiên; khi tắt tiếng, cả nhạc nền lẫn hiệu ứng đều được tắt.
+- Nhạc nền chiptune vui nhộn được tạo trực tiếp bằng Web Audio API, có giai điệu riêng cho HTML, JavaScript và Java.
+- Hiệu ứng âm thanh: nhấn nút, nhảy, nhặt mảnh kiến thức, va chạm, bắt đầu/tiếp tục màn, tạm dừng, chiến thắng và Game Over.
+- Âm thanh chỉ bắt đầu sau thao tác của người chơi để tuân thủ chính sách autoplay của trình duyệt; không cần tải file âm thanh bên ngoài.
 
 CẤU TRÚC SOURCE
 - index.html: màn hình trang chủ, bản đồ, chọn level, game và thư tri ân.
 - style.css: giao diện, font chữ, bố cục và responsive.
-- script.js: dữ liệu 3 thế giới, 9 level, vật phẩm, quái, bẫy, va chạm, camera và tiến trình game.
+- script.js: dữ liệu 3 thế giới, 9 level, vật phẩm, quái, bẫy, va chạm, camera, tiến trình game và hệ thống âm thanh Web Audio API.
 
 LƯU Ý
 - Giao diện tiếng Việt ưu tiên Be Vietnam Pro / Segoe UI / Arial.

@@ -146,3 +146,69 @@ button:focus-visible { outline: 3px solid #e2a94f; outline-offset: 3px; }
   .level-card { min-height: 190px; }
   .world-card:hover, .level-card:hover { transform: none; }
 }
+
+
+/* ===== Original chiptune soundtrack and volume controls ===== */
+.audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.volume-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #c3d4ef;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  white-space: nowrap;
+}
+.volume-control input[type="range"] {
+  width: 92px;
+  height: 18px;
+  margin: 0;
+  accent-color: #ffd76a;
+  cursor: pointer;
+}
+.volume-control output {
+  min-width: 32px;
+  color: #fff0b5;
+  font-variant-numeric: tabular-nums;
+}
+#soundBtn[aria-pressed="false"] {
+  color: #c3d4ef;
+  background: #1c2945;
+}
+#soundBtn:focus-visible,
+.volume-control input:focus-visible {
+  outline: 3px solid #ffd76a;
+  outline-offset: 3px;
+}
+@media (max-width: 800px) {
+  .top-actions { gap: 7px; }
+  .audio-controls { gap: 7px; }
+  .volume-control { gap: 4px; font-size: 8px; }
+  .volume-control input[type="range"] { width: 62px; }
+  .volume-control output { min-width: 27px; font-size: 8px; }
+  .topbar { min-height: 72px; height: auto; }
+  .small-btn { padding: 8px 9px; }
+}
+@media (max-width: 430px) {
+  .brand p { display: none; }
+  .brand h1 { font-size: 8px; }
+  .audio-controls { flex-direction: column; align-items: flex-end; gap: 4px; }
+  .volume-control input[type="range"] { width: 72px; }
+}
+
+/* Consistent feedback for mouse, touch and keyboard navigation. */
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:active:not(:disabled) { transform: translateY(2px); }
+button:focus-visible {
+  outline: 3px solid #e2a94f;
+  outline-offset: 3px;
+}
+button:disabled { cursor: not-allowed; opacity: .6; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}

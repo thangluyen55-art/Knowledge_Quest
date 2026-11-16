@@ -9,3 +9,20 @@ KNOWLEDGE QUEST — CHANGELOG THREE WORLDS EDITION
 - Dùng chung một game engine để giảm mã trùng lặp và giữ cách điều khiển nhất quán.
 - Giữ cơ chế quái mặt đất tuần tra trong phạm vi nền; xác thực vị trí gai nằm trên nền đất.
 - Giữ font Unicode, canvas backing 2x và thẻ kiến thức có chữ tự co theo chiều rộng.
+
+
+KNOWLEDGE QUEST — AUDIO UPDATE
+- Thêm nhạc nền chiptune vui nhộn, tự sáng tác bằng Web Audio API cho từng thế giới HTML, JavaScript và Java.
+- Thêm hiệu ứng âm thanh riêng cho nhảy, thu thập kiến thức, va chạm, bắt đầu màn, chiến thắng và Game Over.
+- Bổ sung nút bật/tắt toàn bộ âm thanh và thanh chỉnh âm lượng 0–100%.
+- Tự dừng nhạc khi tạm dừng, Game Over hoặc hoàn thành màn; phát lại khi tiếp tục.
+- Không sử dụng file âm thanh ngoài; game tiếp tục chạy nếu trình duyệt không hỗ trợ Web Audio API.
+
+KNOWLEDGE QUEST — AUDIO & QUALITY UPDATE 2
+- Sửa luồng khởi tạo Web Audio: mở khóa AudioContext ngay trong thao tác click thật đầu tiên; hiệu ứng được phát sau khi trình duyệt xác nhận audio context đã chạy.
+- Thêm âm thanh thao tác cho nút Bắt đầu hành trình, Vào Map, chọn Level, quay lại, thoát màn, các nút kết thúc và nút điều hướng động.
+- Thêm âm báo riêng cho Tạm dừng và Tiếp tục; phân biệt âm thanh bắt đầu level với âm thanh tiếp tục sau pause.
+- Giữ riêng âm thanh bật tiếng; khi tắt tiếng, toàn bộ nhạc nền và hiệu ứng được mute.
+- Sửa trạng thái nhạc khi thoát màn hoặc quay lại bản đồ để không còn nhạc của map cũ phát ngầm.
+- Ngăn tạo nhiều lịch phát nhạc khi có nhiều thao tác mở AudioContext gần như đồng thời.
+- Tối ưu hiển thị chữ trên canvas: giảm cỡ chữ khi cần thay vì ép ngang, giúp thông báo dài rõ và cân đối hơn.

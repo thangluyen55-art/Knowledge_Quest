@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Knowledge Quest - Hành trình tri thức</title>
+  <title>Knowledge Quest - Audio Edition</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,7 +18,14 @@
       </div>
       <div class="top-actions">
         <span class="pixel-chip">PLAYER 1</span>
-        <button id="soundBtn" class="small-btn" type="button" aria-label="Bật tắt âm thanh">♪ ÂM THANH: BẬT</button>
+        <div class="audio-controls" aria-label="Điều khiển âm thanh">
+          <button id="soundBtn" class="small-btn" type="button" aria-label="Bật hoặc tắt âm thanh" aria-pressed="true">♪ ÂM THANH: BẬT</button>
+          <label class="volume-control" for="volumeSlider">
+            <span>VOL</span>
+            <input id="volumeSlider" type="range" min="0" max="100" value="48" step="1" aria-label="Âm lượng">
+            <output id="volumeValue" for="volumeSlider">48%</output>
+          </label>
+        </div>
       </div>
     </header>
 

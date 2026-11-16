@@ -138,7 +138,19 @@ let running = false;
 let rafId = 0;
 let lastTime = 0;
 let soundOn = true;
+let volumeLevel = 0.48;
 let audioContext = null;
+let audioResumePromise = null;
+let masterGain = null;
+let musicGain = null;
+let sfxGain = null;
+let musicTimer = null;
+let musicStep = 0;
+let musicWorld = -1;
+let musicNextTime = 0;
+let musicSceneActive = false;
+let musicGeneration = 0;
+let musicStartPending = false;
 let score = 0;
 let lives = 3;
 let keys = Object.create(null);
@@ -147,21 +159,268 @@ let toast = "";
 let toastFrames = 0;
 let jumpWasDown = false;
 let goalMessageCooldown = 0;
+let levelHasStarted = false;
 
-function beep(frequency = 500, duration = 0.08) {
-  if (!soundOn) return;
+// Original chiptune audio is synthesized with Web Audio API, so the game
+// needs no external MP3/WAV files and can still run offline.
+const MUSIC_THEMES = [
+  {
+    name: "HTML",
+    root: 130.81, // C3
+    melody: [659.25, null, 783.99, null, 880.00, 783.99, 659.25, null, 523.25, null, 587.33, 659.25, 783.99, null, 659.25, null]
+  },
+  {
+    name: "JavaScript",
+    root: 146.83, // D3
+    melody: [587.33, null, 659.25, 783.99, null, 880.00, 783.99, null, 659.25, null, 587.33, 659.25, null, 783.99, 880.00, null]
+  },
+  {
+    name: "Java",
+    root: 110.00, // A2
+    melody: [587.33, null, 739.99, 880.00, null, 987.77, 880.00, null, 739.99, null, 659.25, 739.99, 880.00, null, 739.99, null]
+  }
+];
+
+function ensureAudio() {
   try {
-    audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+    const AudioConstructor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioConstructor) return false;
+    if (!audioContext) {
+      audioContext = new AudioConstructor();
+      masterGain = audioContext.createGain();
+      musicGain = audioContext.createGain();
+      sfxGain = audioContext.createGain();
+      masterGain.gain.value = soundOn ? volumeLevel : 0;
+      musicGain.gain.value = 0.62;
+      sfxGain.gain.value = 0.82;
+      musicGain.connect(masterGain);
+      sfxGain.connect(masterGain);
+      masterGain.connect(audioContext.destination);
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+// Call resume() directly from a real user gesture (click/keyboard) to satisfy
+// browser autoplay policies. Effects are queued only after the context is live,
+// which prevents the first menu/button sound from being silently discarded.
+function resumeAudioFromGesture() {
+  if (!ensureAudio()) return Promise.resolve(false);
+  if (audioContext.state === "running") return Promise.resolve(true);
+  if (audioResumePromise) return audioResumePromise;
+  try {
+    audioResumePromise = Promise.resolve(audioContext.resume())
+      .then(() => audioContext.state === "running")
+      .catch(() => false)
+      .finally(() => { audioResumePromise = null; });
+    return audioResumePromise;
+  } catch (_) {
+    audioResumePromise = null;
+    return Promise.resolve(false);
+  }
+}
+
+function applyMasterVolume() {
+  if (!masterGain || !audioContext) return;
+  const target = soundOn ? volumeLevel : 0;
+  masterGain.gain.setTargetAtTime(target, audioContext.currentTime, 0.035);
+}
+
+function scheduleTone(frequency, startTime, duration, options = {}) {
+  if (!audioContext) return;
+  const destination = options.destination || sfxGain;
+  if (!destination) return;
+  try {
     const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.type = "square";
-    oscillator.frequency.value = frequency;
-    gain.gain.value = 0.025;
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + duration);
-  } catch (_) { /* Audio is optional. */ }
+    const envelope = audioContext.createGain();
+    const attack = Math.min(0.012, duration * 0.25);
+    const peak = Math.max(0.0002, options.volume ?? 0.12);
+    oscillator.type = options.wave || "triangle";
+    oscillator.frequency.setValueAtTime(frequency, startTime);
+    if (options.slideTo) {
+      oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, options.slideTo), startTime + duration);
+    }
+    envelope.gain.setValueAtTime(0.0001, startTime);
+    envelope.gain.exponentialRampToValueAtTime(peak, startTime + attack);
+    envelope.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+    oscillator.connect(envelope);
+    envelope.connect(destination);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + duration + 0.025);
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      envelope.disconnect();
+    };
+  } catch (_) { /* Audio is optional; gameplay must continue without it. */ }
+}
+
+function playSfxNow(name, delay = 0) {
+  if (!soundOn || !audioContext || audioContext.state !== "running") return;
+  const start = audioContext.currentTime + Math.max(0, delay) + 0.012;
+  const note = (frequency, offset, duration, options = {}) =>
+    scheduleTone(frequency, start + offset, duration, { destination: sfxGain, ...options });
+
+  switch (name) {
+    case "jump":
+      note(350, 0, 0.13, { wave: "square", volume: 0.085, slideTo: 620 });
+      break;
+    case "collect":
+      note(659.25, 0, 0.11, { wave: "triangle", volume: 0.13 });
+      note(783.99, 0.065, 0.11, { wave: "triangle", volume: 0.13 });
+      note(1046.5, 0.13, 0.16, { wave: "triangle", volume: 0.14 });
+      break;
+    case "hit":
+      note(210, 0, 0.18, { wave: "sawtooth", volume: 0.11, slideTo: 92 });
+      break;
+    case "victory":
+      [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((freq, i) =>
+        note(freq, i * 0.095, 0.19, { wave: "triangle", volume: 0.12 })
+      );
+      break;
+    case "gameOver":
+      [392, 329.63, 261.63, 196].forEach((freq, i) =>
+        note(freq, i * 0.16, 0.2, { wave: "square", volume: 0.095 })
+      );
+      break;
+    case "levelStart":
+      [392, 523.25, 659.25].forEach((freq, i) =>
+        note(freq, i * 0.075, 0.13, { wave: "triangle", volume: 0.085 })
+      );
+      break;
+    case "resume":
+      [523.25, 659.25].forEach((freq, i) =>
+        note(freq, i * 0.07, 0.11, { wave: "triangle", volume: 0.075 })
+      );
+      break;
+    case "pause":
+      [659.25, 523.25].forEach((freq, i) =>
+        note(freq, i * 0.07, 0.10, { wave: "triangle", volume: 0.07 })
+      );
+      break;
+    case "back":
+      note(520, 0, 0.07, { wave: "triangle", volume: 0.06, slideTo: 390 });
+      break;
+    case "enterMap":
+      [587.33, 783.99, 987.77].forEach((freq, i) =>
+        note(freq, i * 0.065, 0.12, { wave: "triangle", volume: 0.08 })
+      );
+      break;
+    case "menuStart":
+      [392, 523.25, 659.25, 783.99].forEach((freq, i) =>
+        note(freq, i * 0.06, 0.12, { wave: "triangle", volume: 0.08 })
+      );
+      break;
+    case "toggleOn":
+      [659.25, 880].forEach((freq, i) =>
+        note(freq, i * 0.07, 0.11, { wave: "triangle", volume: 0.08 })
+      );
+      break;
+    case "click":
+      note(740, 0, 0.055, { wave: "square", volume: 0.055 });
+      break;
+  }
+}
+
+function playSfx(name, delay = 0) {
+  if (!soundOn || !ensureAudio()) return;
+  if (audioContext.state === "running") {
+    playSfxNow(name, delay);
+    return;
+  }
+  resumeAudioFromGesture().then((ready) => {
+    if (ready && soundOn) playSfxNow(name, delay);
+  });
+}
+
+function scheduleMusicNotes() {
+  if (!audioContext || !musicGain || !soundOn || !musicSceneActive) return;
+  const theme = MUSIC_THEMES[musicWorld] || MUSIC_THEMES[0];
+  const stepDuration = 0.22;
+  const scheduleUntil = audioContext.currentTime + 0.2;
+  while (musicNextTime < scheduleUntil) {
+    const step = musicStep % theme.melody.length;
+    const melodyNote = theme.melody[step];
+    if (melodyNote) {
+      scheduleTone(melodyNote, musicNextTime, 0.155, {
+        destination: musicGain, wave: "square", volume: 0.055
+      });
+    }
+    if (musicStep % 4 === 0) {
+      scheduleTone(theme.root, musicNextTime, 0.34, {
+        destination: musicGain, wave: "triangle", volume: 0.075
+      });
+      scheduleTone(theme.root * 2, musicNextTime + 0.025, 0.22, {
+        destination: musicGain, wave: "triangle", volume: 0.027
+      });
+    }
+    musicNextTime += stepDuration;
+    musicStep += 1;
+  }
+}
+
+function startMusic(world = worldIndex) {
+  musicSceneActive = true;
+  if (!soundOn || !ensureAudio()) return;
+  if (musicWorld === world && (musicTimer !== null || musicStartPending)) return;
+  if (musicTimer !== null) clearInterval(musicTimer);
+  musicWorld = world;
+  musicStep = 0;
+  const generation = ++musicGeneration;
+  musicStartPending = true;
+  resumeAudioFromGesture().then((ready) => {
+    if (!ready || !soundOn || !musicSceneActive || generation !== musicGeneration || musicWorld !== world) {
+      if (generation === musicGeneration) musicStartPending = false;
+      return;
+    }
+    musicStartPending = false;
+    musicNextTime = audioContext.currentTime + 0.06;
+    musicGain.gain.setTargetAtTime(0.62, audioContext.currentTime, 0.04);
+    scheduleMusicNotes();
+    if (musicTimer !== null) clearInterval(musicTimer);
+    musicTimer = window.setInterval(scheduleMusicNotes, 80);
+  });
+}
+
+function stopMusic(clearScene = false) {
+  musicGeneration += 1;
+  musicStartPending = false;
+  if (musicTimer !== null) {
+    clearInterval(musicTimer);
+    musicTimer = null;
+  }
+  if (clearScene) musicSceneActive = false;
+  if (musicGain && audioContext) {
+    musicGain.gain.setTargetAtTime(0.0001, audioContext.currentTime, 0.025);
+  }
+}
+
+function updateSoundControls() {
+  const button = $("soundBtn");
+  button.textContent = `♪ ÂM THANH: ${soundOn ? "BẬT" : "TẮT"}`;
+  button.setAttribute("aria-pressed", String(soundOn));
+  const slider = $("volumeSlider");
+  const output = $("volumeValue");
+  slider.value = String(Math.round(volumeLevel * 100));
+  output.textContent = `${Math.round(volumeLevel * 100)}%`;
+  applyMasterVolume();
+}
+
+function setSoundEnabled(enabled) {
+  soundOn = enabled;
+  if (soundOn) {
+    resumeAudioFromGesture().then((ready) => {
+      if (!ready || !soundOn) return;
+      applyMasterVolume();
+      if (musicSceneActive) startMusic(worldIndex);
+      playSfxNow("toggleOn");
+    });
+  } else {
+    stopMusic(false);
+    applyMasterVolume();
+  }
+  updateSoundControls();
 }
 
 function rect(x, y, width, height, color) {
@@ -171,9 +430,14 @@ function rect(x, y, width, height, color) {
 
 function pixelLabel(text, x, y, size = 12, color = "#fff", align = "center", maxWidth = 1000) {
   // Keep the pixel-art shapes, but render lettering with normal antialiasing.
-  // A subtle shadow is clearer than the thick stroke used by the old helper.
+  // Fit by reducing the font size instead of horizontally squeezing glyphs.
   ctx.save();
-  ctx.font = `700 ${size}px "Segoe UI", Arial, sans-serif`;
+  let fittedSize = size;
+  ctx.font = `700 ${fittedSize}px "Segoe UI", Arial, sans-serif`;
+  while (ctx.measureText(text).width > maxWidth && fittedSize > 8) {
+    fittedSize -= 0.5;
+    ctx.font = `700 ${fittedSize}px "Segoe UI", Arial, sans-serif`;
+  }
   ctx.textAlign = align;
   ctx.textBaseline = "alphabetic";
   ctx.lineJoin = "round";
@@ -182,7 +446,7 @@ function pixelLabel(text, x, y, size = 12, color = "#fff", align = "center", max
   ctx.shadowOffsetX = 0.6;
   ctx.shadowOffsetY = 0.8;
   ctx.fillStyle = color;
-  ctx.fillText(text, x, y, maxWidth);
+  ctx.fillText(text, x, y);
   ctx.restore();
 }
 
@@ -249,6 +513,7 @@ function buildHazards(index) {
 function startLevel(index) {
   keys = Object.create(null);
   levelIndex = index;
+  levelHasStarted = false;
   score = 0;
   lives = 3;
   cameraX = 0;
@@ -287,6 +552,7 @@ function startLevel(index) {
   $("overlayBtn").textContent = "BẮT ĐẦU";
   $("overlayBtn").onclick = startLoop;
   running = false;
+  $("pauseBtn").disabled = true;
   cancelAnimationFrame(rafId);
   draw();
 }
@@ -299,9 +565,13 @@ function updateProgress() {
 
 function startLoop() {
   if (running) return;
+  startMusic(worldIndex);
+  playSfx(levelHasStarted ? "resume" : "levelStart");
+  levelHasStarted = true;
   keys = Object.create(null);
   jumpWasDown = false;
   running = true;
+  $("pauseBtn").disabled = false;
   lastTime = 0;
   $("overlay").classList.add("hidden");
   rafId = requestAnimationFrame(gameLoop);
@@ -309,10 +579,13 @@ function startLoop() {
 
 function pauseGame() {
   if (!running) return;
+  playSfx("pause");
   keys = Object.create(null);
   jumpWasDown = false;
   running = false;
+  $("pauseBtn").disabled = true;
   cancelAnimationFrame(rafId);
+  stopMusic(true);
   $("overlay").classList.remove("hidden");
   $("overlayEyebrow").textContent = "TẠM DỪNG";
   $("overlayTitle").textContent = "NGHỈ MỘT CHÚT NHÉ!";
@@ -378,7 +651,7 @@ function update(delta) {
     player.vy = -12.3;
     player.onGround = false;
     player.riding = null;
-    beep(620, 0.06);
+    playSfx("jump");
   }
   jumpWasDown = jumpDown;
 
@@ -435,7 +708,7 @@ function update(delta) {
     if (!item.got && intersects(player, floatingItem)) {
       item.got = true;
       score += 1;
-      beep(850, 0.08);
+      playSfx("collect");
       $("scoreText").textContent = `${score} / ${levelData[levelIndex].need}`;
       updateProgress();
       flashToast(`+1 KIẾN THỨC: ${item.label}`);
@@ -464,11 +737,14 @@ function loseLife(message) {
   lives -= 1;
   invincibleFrames = 85;
   $("livesText").textContent = "♥ ".repeat(lives) + "♡ ".repeat(3 - lives);
-  beep(160, 0.16);
+  playSfx("hit");
   flashToast(message);
   if (lives <= 0) {
     running = false;
+    $("pauseBtn").disabled = true;
     cancelAnimationFrame(rafId);
+    stopMusic(true);
+    playSfx("gameOver", 0.18);
     $("overlay").classList.remove("hidden");
     $("overlayEyebrow").textContent = "THỬ LẠI NÀO";
     $("overlayTitle").textContent = "ĐỪNG BỎ CUỘC!";
@@ -663,8 +939,10 @@ function draw() {
 
 function completeLevel() {
   running = false;
+  $("pauseBtn").disabled = true;
   cancelAnimationFrame(rafId);
-  beep(950, 0.2);
+  stopMusic(true);
+  playSfx("victory");
   $("overlay").classList.remove("hidden");
   $("overlayEyebrow").textContent = `WORLD 0${worldIndex + 1} • LEVEL 0${levelIndex + 1} HOÀN THÀNH`;
   $("overlayTitle").textContent = "TUYỆT VỜI!";
@@ -699,6 +977,7 @@ function renderLevelCards() {
 function selectWorld(index) {
   worldIndex = Math.max(0, Math.min(index, worldData.length - 1));
   levelData = worldData[worldIndex].levels;
+  startMusic(worldIndex);
   renderLevelCards();
   showScreen("levelScreen");
 }
@@ -725,18 +1004,47 @@ function finishWorld() {
   showScreen("endingScreen");
 }
 
+// One shared UI sound handler covers static and dynamically-created buttons
+// (for example, the nine level cards) without duplicating SFX in each handler.
+// It also resumes Web Audio synchronously from the trusted click gesture.
+document.addEventListener("click", (event) => {
+  const button = event.target.closest && event.target.closest("button");
+  if (!button || button.disabled || button.id === "soundBtn" || button.id === "pauseBtn") return;
+
+  // Starting/resuming a level and pausing have their own dedicated sounds.
+  if (button.id === "overlayBtn" && ["BẮT ĐẦU", "TIẾP TỤC"].includes(button.textContent.trim())) return;
+
+  let effect = "click";
+  if (button.id === "startBtn") effect = "menuStart";
+  else if (["openHtmlBtn", "openJsBtn", "openJavaBtn", "endingNextBtn"].includes(button.id)) effect = "enterMap";
+  else if (["backHomeBtn", "backMapBtn", "quitBtn", "endingMapBtn"].includes(button.id)) effect = "back";
+  else if (button.id === "overlayBtn" && /SANG MÀN|HOÀN THÀNH THẾ GIỚI/.test(button.textContent)) effect = "enterMap";
+
+  resumeAudioFromGesture().then((ready) => {
+    if (ready && soundOn) playSfxNow(effect);
+  });
+}, true);
+
 $("startBtn").addEventListener("click", () => showScreen("mapScreen"));
-$("backHomeBtn").addEventListener("click", () => showScreen("homeScreen"));
+$("backHomeBtn").addEventListener("click", () => {
+  stopMusic(true);
+  showScreen("homeScreen");
+});
 $("openHtmlBtn").addEventListener("click", () => selectWorld(0));
 $("openJsBtn").addEventListener("click", () => selectWorld(1));
 $("openJavaBtn").addEventListener("click", () => selectWorld(2));
-$("backMapBtn").addEventListener("click", () => showScreen("mapScreen"));
+$("backMapBtn").addEventListener("click", () => {
+  stopMusic(true);
+  showScreen("mapScreen");
+});
 $("pauseBtn").addEventListener("click", pauseGame);
 $("quitBtn").addEventListener("click", () => {
   keys = Object.create(null);
   jumpWasDown = false;
   running = false;
   cancelAnimationFrame(rafId);
+  $("pauseBtn").disabled = true;
+  stopMusic(true);
   showScreen("levelScreen");
 });
 $("endingReplayBtn").addEventListener("click", () => startLevel(0));
@@ -744,9 +1052,12 @@ $("endingNextBtn").addEventListener("click", () => {
   if (worldIndex < worldData.length - 1) selectWorld(worldIndex + 1);
 });
 $("endingMapBtn").addEventListener("click", () => showScreen("mapScreen"));
-$("soundBtn").addEventListener("click", () => {
-  soundOn = !soundOn;
-  $("soundBtn").textContent = `♪ ÂM THANH: ${soundOn ? "BẬT" : "TẮT"}`;
+$("soundBtn").addEventListener("click", () => setSoundEnabled(!soundOn));
+$("volumeSlider").addEventListener("input", (event) => {
+  volumeLevel = Math.max(0, Math.min(1, Number(event.target.value) / 100));
+  $("volumeValue").textContent = `${Math.round(volumeLevel * 100)}%`;
+  if (volumeLevel > 0 && soundOn) ensureAudio();
+  applyMasterVolume();
 });
 
 window.addEventListener("keydown", (event) => {
@@ -767,5 +1078,6 @@ document.addEventListener("visibilitychange", () => {
 
 // Initial map screen metadata. The canvas is drawn when a level is selected.
 updateWorldStatuses();
+updateSoundControls();
 $("objectiveText").textContent = levelData[0].hint;
 $("difficultyText").textContent = levelData[0].difficulty;

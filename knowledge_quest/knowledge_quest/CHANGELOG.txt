@@ -1,0 +1,17 @@
+KNOWLEDGE QUEST — CHANGELOG
+
+1. Đổi tên sản phẩm hiển thị trong game thành Knowledge Quest: tiêu đề trang, logo, HUD, màn kết thúc, chú thích canvas và tài liệu dự án.
+2. Sửa lỗi hiển thị vật phẩm: thay huy hiệu quá nhỏ bằng thẻ kiến thức pixel-art lớn hơn; nhãn HTML được căn giữa và tự giảm cỡ chữ theo độ dài.
+3. Cập nhật kích thước vùng nhặt vật phẩm để khớp với thẻ hiển thị mới, tránh hình ảnh và vùng va chạm lệch nhau.
+4. Chặn thông báo yêu cầu thu thập tại cột mốc lặp lại liên tục khi người chơi đứng cạnh cột mốc.
+5. Dừng xử lý phần còn lại của lượt cập nhật sau khi người chơi hết mạng, tránh cập nhật điểm/vật phẩm sau khi game over.
+6. Giữ các sửa lỗi của bản trước: camera, khởi tạo canvas, va chạm platform, bệ di chuyển, luồng overlay, font tiếng Việt, HUD và độ khó tăng dần ở 3 level.
+
+
+BẢN CẬP NHẬT — 16/11/2026
+- Sửa Bug mặt đất: mỗi Bug được gắn với một đoạn nền đất; giới hạn tuần tra tự tính theo chiều rộng nền và kích thước Bug, quay đầu trước miệng hố.
+- Sửa vị trí gai: tất cả gai được kiểm tra nằm trọn trên một đoạn nền đất, không còn xuất hiện trên hố.
+- Tăng kích thước thẻ kiến thức, cải thiện cỡ chữ và độ tương phản của nhãn HTML.
+- Chuẩn hóa font giao diện tiếng Việt sang Be Vietnam Pro/Segoe UI/Arial; bỏ phụ thuộc font pixel thiếu dấu.
+- Làm rõ chữ MENTOR, thông báo nhặt vật phẩm; tự giới hạn chiều rộng thông báo.
+- Xóa phím điều khiển bị giữ khi tạm dừng/thoát/mất focus; tự tạm dừng khi chuyển tab hoặc chuyển sang cửa sổ khác.

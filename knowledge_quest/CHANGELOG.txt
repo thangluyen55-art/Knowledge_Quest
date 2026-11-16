@@ -1,0 +1,11 @@
+KNOWLEDGE QUEST — CHANGELOG THREE WORLDS EDITION
+
+- Hoàn thiện WORLD 02: Khu rừng JavaScript với 3 màn về biến/dữ liệu, hàm/mảng và vòng lặp/DOM.
+- Hoàn thiện WORLD 03: Thành trì Java với 3 màn về class/object, kế thừa/interface và thử thách Java cuối.
+- Mở khóa cả 3 map trên bản đồ; thay màn chọn level theo thế giới được chọn.
+- Thêm chủ đề màu sắc/nền riêng cho HTML, JavaScript và Java.
+- Mỗi map có 3 level, độ khó tăng dần, bộ vật phẩm, quái, bẫy và bệ di chuyển riêng.
+- Thêm màn tri ân riêng cho từng map, nút chơi lại, về bản đồ và chuyển thẳng sang map kế tiếp.
+- Dùng chung một game engine để giảm mã trùng lặp và giữ cách điều khiển nhất quán.
+- Giữ cơ chế quái mặt đất tuần tra trong phạm vi nền; xác thực vị trí gai nằm trên nền đất.
+- Giữ font Unicode, canvas backing 2x và thẻ kiến thức có chữ tự co theo chiều rộng.

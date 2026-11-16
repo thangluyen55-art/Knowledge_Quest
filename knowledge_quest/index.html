@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Quest - Hành trình tri thức</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon">✦</span>
+        <div>
+          <h1>KNOWLEDGE QUEST</h1>
+          <p>HÀNH TRÌNH TRI THỨC • CODEGYM 20/11</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="pixel-chip">PLAYER 1</span>
+        <button id="soundBtn" class="small-btn" type="button" aria-label="Bật tắt âm thanh">♪ ÂM THANH: BẬT</button>
+      </div>
+    </header>
+
+    <section id="homeScreen" class="screen home-screen">
+      <div class="hero-copy">
+        <p class="eyebrow">A PIXEL ART ADVENTURE</p>
+        <h2>Học từng dòng code.<br><span>Gửi ngàn lời tri ân.</span></h2>
+        <p class="intro">Trên hành trình trở thành lập trình viên, mỗi kiến thức là một món quà thầy cô trao tặng. Hãy thu thập những mảnh ghép tri thức và tiến về phía trước!</p>
+        <button id="startBtn" class="primary-btn" type="button">BẮT ĐẦU HÀNH TRÌNH <span>▶</span></button>
+        <p class="controls-hint">DI CHUYỂN: ← → hoặc A / D &nbsp; • &nbsp; NHẢY: SPACE / ↑ / W</p>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="sun"></div>
+        <div class="cloud cloud-one"></div><div class="cloud cloud-two"></div>
+        <div class="pixel-hill hill-back"></div><div class="pixel-hill hill-front"></div>
+        <div class="hero-platform"></div>
+        <div class="hero-player"><span></span></div>
+        <div class="floating-book">▣</div><div class="floating-star">★</div>
+        <div class="hero-sign">LEARN<br>GROW<br>THANKS!</div>
+      </div>
+    </section>
+
+    <section id="mapScreen" class="screen map-screen hidden">
+      <div class="section-heading">
+        <div><p class="eyebrow">CHỌN CHẶNG ĐƯỜNG</p><h2>BẢN ĐỒ TRI THỨC</h2></div>
+        <button class="text-btn" id="backHomeBtn" type="button">← Trang chủ</button>
+      </div>
+      <p class="section-desc">Ba thế giới, chín thử thách. Hãy đi từ nền móng HTML, đánh thức logic JavaScript, rồi chinh phục thành trì Java.</p>
+      <div class="world-grid">
+        <article class="world-card world-html">
+          <div class="world-number">WORLD 01</div><div class="world-art html-art"><span>&lt;/&gt;</span></div>
+          <h3>VƯƠNG QUỐC HTML</h3><p>Nền móng của mọi trang web</p>
+          <div class="level-pills"><span>01</span><span>02</span><span>03</span></div>
+          <button class="world-btn" id="openHtmlBtn" type="button">VÀO MAP <span>▶</span></button>
+          <small class="status-open">● 3 MÀN ĐÃ SẴN SÀNG</small>
+        </article>
+        <article class="world-card world-js">
+          <div class="world-number">WORLD 02</div><div class="world-art js-art"><span>JS</span></div>
+          <h3>KHU RỪNG JAVASCRIPT</h3><p>Nơi logic và tương tác thức tỉnh</p>
+          <div class="level-pills"><span>01</span><span>02</span><span>03</span></div>
+          <button class="world-btn" id="openJsBtn" type="button">VÀO MAP <span>▶</span></button>
+          <small class="status-open">● 3 MÀN ĐÃ SẴN SÀNG</small>
+        </article>
+        <article class="world-card world-java">
+          <div class="world-number">WORLD 03</div><div class="world-art java-art"><span>☕</span></div>
+          <h3>THÀNH TRÌ JAVA</h3><p>Rèn tư duy và xây dựng chương trình</p>
+          <div class="level-pills"><span>01</span><span>02</span><span>03</span></div>
+          <button class="world-btn" id="openJavaBtn" type="button">VÀO MAP <span>▶</span></button>
+          <small class="status-open">● 3 MÀN ĐÃ SẴN SÀNG</small>
+        </article>
+      </div>
+      <div class="map-note">✦ Mỗi màn chơi là một bài học. Mỗi bài học là một điều đáng cảm ơn.</div>
+    </section>
+
+    <section id="levelScreen" class="screen level-screen hidden">
+      <div class="section-heading">
+        <div><p class="eyebrow" id="levelWorldKicker">KNOWLEDGE QUEST • WORLD 01: HTML</p><h2 id="levelWorldTitle">CHỌN MÀN CHƠI</h2></div>
+        <button class="text-btn" id="backMapBtn" type="button">← Bản đồ</button>
+      </div>
+      <p class="section-desc" id="levelWorldSummary">Chọn một thử thách để bắt đầu hành trình.</p>
+      <div class="level-grid" id="levelGrid"></div>
+      <p class="map-note">Mục tiêu: thu thập đủ mảnh ghép tri thức, tránh Bug và chạm cột mốc Mentor ở cuối đường.</p>
+    </section>
+
+    <section id="gameScreen" class="screen game-screen hidden">
+      <div class="game-hud">
+        <div class="hud-world"><small id="hudWorld">KNOWLEDGE QUEST • WORLD 01: HTML</small><strong id="hudLevel">LEVEL 01</strong></div>
+        <div class="hud-stat"><small>MẢNH KIẾN THỨC</small><strong id="scoreText">0 / 5</strong></div>
+        <div class="hud-stat"><small>MẠNG</small><strong id="livesText">♥ ♥ ♥</strong></div>
+        <div class="hud-difficulty"><small>ĐỘ KHÓ</small><strong id="difficultyText">DỄ</strong></div>
+        <button id="pauseBtn" class="small-btn" type="button">Ⅱ TẠM DỪNG</button>
+      </div>
+      <div class="game-objective">
+        <span class="objective-icon">✦</span>
+        <span id="objectiveText">Thu thập kiến thức và tiến đến cột mốc Mentor.</span>
+        <div class="progress-wrap"><div id="progressFill" class="progress-fill"></div></div>
+        <strong id="progressLabel">0% TRI THỨC</strong>
+      </div>
+      <div class="game-frame">
+        <canvas id="gameCanvas" width="960" height="540" aria-label="Knowledge Quest - game platformer pixel art"></canvas>
+        <div id="overlay" class="game-overlay hidden">
+          <div class="overlay-panel">
+            <p class="eyebrow" id="overlayEyebrow">LEVEL 01</p>
+            <h2 id="overlayTitle">SẴN SÀNG CHƯA?</h2>
+            <p id="overlayText">Thu thập kiến thức và tiến đến lá cờ Mentor.</p>
+            <button id="overlayBtn" class="primary-btn" type="button">TIẾP TỤC</button>
+          </div>
+        </div>
+      </div>
+      <div class="game-bottom">
+        <p>← → / A D: DI CHUYỂN &nbsp; • &nbsp; SPACE / ↑: NHẢY</p>
+        <button id="quitBtn" class="text-btn" type="button">Thoát màn chơi</button>
+      </div>
+    </section>
+
+    <section id="endingScreen" class="screen ending-screen hidden">
+      <div class="ending-card">
+        <div class="ending-stars">★ ✦ ★</div>
+        <p class="eyebrow" id="endingEyebrow">KNOWLEDGE QUEST • WORLD 01 COMPLETED</p>
+        <h2 id="endingTitle">BẠN ĐÃ HOÀN THÀNH<br><span>HÀNH TRÌNH HTML!</span></h2>
+        <p class="ending-message" id="endingMessage">Mỗi thẻ HTML là một viên gạch nhỏ xây nên thế giới web. Cảm ơn thầy cô đã kiên nhẫn đặt những viên gạch đầu tiên cùng chúng em.</p>
+        <div class="thank-you-letter">
+          <div class="letter-icon">✉</div>
+          <p id="endingQuote">“Cảm ơn thầy cô vì không chỉ dạy chúng em viết code, mà còn dạy chúng em cách kiên trì tìm lời giải. Những kiến thức hôm nay sẽ tiếp tục đồng hành cùng chúng em trên chặng đường phía trước.”</p>
+          <strong id="endingSignature">— TỪ NHỮNG HỌC VIÊN CODEGYM —</strong>
+        </div>
+        <div class="ending-actions">
+          <button id="endingReplayBtn" class="primary-btn" type="button">CHƠI LẠI MAP</button>
+          <button id="endingNextBtn" class="secondary-btn" type="button">MAP TIẾP THEO</button>
+          <button id="endingMapBtn" class="secondary-btn" type="button">VỀ BẢN ĐỒ</button>
+        </div>
+      </div>
+    </section>
+    <footer>KNOWLEDGE QUEST <span>♥</span> MADE FOR OUR TEACHERS & MENTORS • CODEGYM 20/11</footer>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
